@@ -1,5 +1,6 @@
 package com.derteuffel.security.securities;
 
+import com.derteuffel.security.models.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -36,6 +37,15 @@ public class JwtTokenProvider {
 
         return Jwts.builder().setSubject(authentication.getName())
                 .claim("roles", authorities)
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationInMs))
+                .signWith(SignatureAlgorithm.HS512, jwtSecret).compact();
+    }
+
+    public String generateToken(User user){
+        String authorities = user.getRole().name();
+        return Jwts.builder().setSubject(user.getUsername())
+                .claim("roles", authorities)
+                .claim("user", user)
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationInMs))
                 .signWith(SignatureAlgorithm.HS512, jwtSecret).compact();
     }

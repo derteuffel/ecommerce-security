@@ -6,6 +6,7 @@ import com.derteuffel.security.messages.responses.MessageResponse;
 import com.derteuffel.security.models.User;
 import com.derteuffel.security.repositories.UserRepository;
 import com.derteuffel.security.securities.JwtTokenProvider;
+import com.derteuffel.security.utils.UtilsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,12 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.security.Principal;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 
 @Slf4j
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -40,18 +47,32 @@ public class AuthController {
 
 
     @GetMapping("/login")
-    public ResponseEntity<?> login(Principal principal){
-        System.out.println(principal.getName());
-        System.out.println("je suis dans la fonction");
-        if(principal == null){
-            //This should be ok http status because this will be used for logout path.
-            return ResponseEntity.ok(principal);
+    public ResponseEntity<?> login(@RequestHeader("Authorization") String basic){
+        
+        String[] cridentials = UtilsService.extractCredentials(basic);
+        Map<String, Object> output = new HashMap();
+        if(cridentials == null || cridentials.length!=2){
+            output.put("status", 400);
+            output.put("message", "Invalid inputs");
+            return new ResponseEntity(output, HttpStatus.BAD_REQUEST);
         }
-        UsernamePasswordAuthenticationToken authenticationToken = (UsernamePasswordAuthenticationToken) principal;
-        System.out.println(authenticationToken.getName());
-        User user = userRepository.findByUsernameOrEmail(authenticationToken.getName(),authenticationToken.getName()).get();
-        user.setToken(jwtUtils.generateToken(authenticationToken));
-        return new ResponseEntity<>(user, HttpStatus.OK);
+            
+        String username = cridentials[0];
+        String password = cridentials[1];
+        
+        Optional<User> userOptional = userRepository.findByUsernameOrEmail(username, username);
+        if(userOptional.isPresent()){
+            User user = userOptional.get();
+            if(encoder.matches(password, user.getPassword())){
+                user.setPassword(null);
+                user.setToken(jwtUtils.generateToken(user));
+                return new ResponseEntity(user, HttpStatus.OK);
+            }
+        }
+        
+        output.put("status", "401");
+        output.put("message", "Invalid credentials");
+        return new ResponseEntity(output, HttpStatus.UNAUTHORIZED);
     }
 
     @PostMapping("/signup")

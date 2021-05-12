@@ -44,12 +44,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         //Cross-origin-resource-sharing
-        //http.authorizeRequests().antMatchers(WHITE_LIST).permitAll();
+        http.authorizeRequests().antMatchers(WHITE_LIST).permitAll();
 
         http.cors()
                 .and()
                 .authorizeRequests()
-                //.antMatchers(WHITE_LIST).permitAll()
+                .antMatchers(WHITE_LIST).permitAll()
                 //These are public pages.
                 .antMatchers("/resources/**", "/error", "/api/user/**","/api/produits/all/**","/api/commandes/**").permitAll()
                 //These can be reachable for just have admin role.
@@ -64,7 +64,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .formLogin().loginPage("/api/auth/login")
                 .and()
                 //enable basic authentication. Http header: basis username:password
-                .httpBasic().and()
+                .httpBasic().disable()
                 //Cross side request forgery.
                 .csrf().disable();
 
